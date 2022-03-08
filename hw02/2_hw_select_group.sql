@@ -27,7 +27,7 @@ USE WideWorldImporters
 
 select StockItemID, StockItemName
 from Warehouse.StockItems
-where StockItemName like '%urgent%'
+where StockItemName like '%urgent%' or StockItemName like 'Animal%'
 
 /*
 2. Поставщиков (Suppliers), у которых не было сделано ни одного заказа (PurchaseOrders).
@@ -37,11 +37,11 @@ where StockItemName like '%urgent%'
 По каким колонкам делать JOIN подумайте самостоятельно.
 */
 
-select distinct ps.SupplierID, ps.SupplierName
+select distinct ps.SupplierID
+	,ps.SupplierName
 from Purchasing.Suppliers as ps
-left join Purchasing.PurchaseOrders as pp
-	on ps.SupplierID = pp.SupplierID
-	where pp.PurchaseOrderID is null
+	left join Purchasing.PurchaseOrders as pp on ps.SupplierID = pp.SupplierID
+where pp.PurchaseOrderID is null
 
 /*
 3. Заказы (Orders) с ценой товара (UnitPrice) более 100$ 
@@ -73,13 +73,10 @@ select sp.OrderID
 	end) as Third
 	,sc.CustomerName as Customer
 from Sales.Orders as sp
-	left join Sales.OrderLines as ol
-		on sp.OrderId = ol.OrderID
-	left join Sales.Customers sc
-		on sp.CustomerID = sc.CustomerID
+	left join Sales.OrderLines as ol on sp.OrderId = ol.OrderID
+	left join Sales.Customers sc on sp.CustomerID = sc.CustomerID
 --пропуск строк
-order by sp.OrderDate, [Quarter], Third asc
-offset 1000 rows fetch first 100 rows only
+order by sp.OrderDate, [Quarter], Third asc offset 1000 rows fetch first 100 rows only
 
 /*
 4. Заказы поставщикам (Purchasing.Suppliers),
@@ -100,12 +97,9 @@ select ad.DeliveryMethodName
 	,ps.SupplierName
 	,ap.FullName
 from Purchasing.Suppliers as ps
-	join Purchasing.PurchaseOrders as pp
-		on ps.SupplierID = pp.SupplierID
-	join Application.DeliveryMethods as ad
-		on pp.DeliveryMethodID = ad.DeliveryMethodID
-	join Application.People as ap
-		on pp.ContactPersonID = ap.PersonID
+	join Purchasing.PurchaseOrders as pp on ps.SupplierID = pp.SupplierID
+	join Application.DeliveryMethods as ad on pp.DeliveryMethodID = ad.DeliveryMethodID
+	join Application.People as ap on pp.ContactPersonID = ap.PersonID
 where pp.ExpectedDeliveryDate between '2013-01-01' and '2013-01-31'
 	and ad.DeliveryMethodName like 'Air Freight' or ad.DeliveryMethodName like 'Refrigerated Air Freight'
 	and pp.IsOrderFinalized = 1
@@ -120,11 +114,9 @@ select top 10 OrderID
 	,sc.CustomerName
 	,ap.FullName
 from sales.Orders as o
-join Application.People as ap
-	on o.SalespersonPersonID = ap.PersonID
-join Sales.Customers as sc
-	on o.CustomerID = sc.CustomerID
-	order by o.OrderDate desc
+	join Application.People as ap on o.SalespersonPersonID = ap.PersonID
+	join Sales.Customers as sc on o.CustomerID = sc.CustomerID
+order by o.OrderDate desc
 
 /*
 6. Все ид и имена клиентов и их контактные телефоны,
@@ -136,13 +128,10 @@ select sc.CustomerID
 	,sc.CustomerName
 	,sc.PhoneNumber
 from Sales.Customers sc
-	join Sales.Orders as so
-		on sc.CustomerID = so.CustomerID
-	join Sales.OrderLines as sol
-		on so.OrderID = sol.OrderID
-	join Warehouse.StockItems as ws
-		on sol.StockItemID = ws.StockItemID
-		where ws.StockItemName like 'Chocolate frogs 250g'
+	join Sales.Orders as so on sc.CustomerID = so.CustomerID
+	join Sales.OrderLines as sol on so.OrderID = sol.OrderID
+	join Warehouse.StockItems as ws on sol.StockItemID = ws.StockItemID
+where ws.StockItemName like 'Chocolate frogs 250g'
 
 /*
 7. Посчитать среднюю цену товара, общую сумму продажи по месяцам
@@ -155,18 +144,15 @@ from Sales.Customers sc
 Продажи смотреть в таблице Sales.Invoices и связанных таблицах.
 */
 
-select 
-	month(si.InvoiceDate) as month
-	,year(si.InvoiceDate) as year
+select month(si.InvoiceDate) as [month]
+	,year(si.InvoiceDate) as [year]
 	,sl.UnitPrice * sl.Quantity as TotalPrice
 	,sum(sl.UnitPrice * sl.Quantity)/sum(sl.Quantity) as avgPrice
 from Sales.Invoices as si
-	join Sales.InvoiceLines as sl
-		on si.InvoiceID = sl.InvoiceID
-	join Warehouse.StockItems as ws
-		on sl.StockItemID = ws.StockItemID
-		group by month(si.InvoiceDate), year(si.InvoiceDate), sl.UnitPrice, sl.Quantity, ws.StockItemName
-		order by month(si.InvoiceDate), year(si.InvoiceDate)
+	join Sales.InvoiceLines as sl on si.InvoiceID = sl.InvoiceID
+	join Warehouse.StockItems as ws on sl.StockItemID = ws.StockItemID
+group by month(si.InvoiceDate), year(si.InvoiceDate), sl.UnitPrice, sl.Quantity, ws.StockItemName
+order by month(si.InvoiceDate), year(si.InvoiceDate)
 
 /*
 8. Отобразить все месяцы, где общая сумма продаж превысила 10 000
@@ -180,17 +166,15 @@ from Sales.Invoices as si
 */
 
 select 
-	month(si.InvoiceDate) as month
-	,year(si.InvoiceDate) as year
+	month(si.InvoiceDate) as [month]
+	,year(si.InvoiceDate) as [year]
 	,sl.UnitPrice * sl.Quantity as TotalPrice
 from Sales.Invoices as si
-	join Sales.InvoiceLines as sl
-		on si.InvoiceID = sl.InvoiceID
-	join Warehouse.StockItems as ws
-		on sl.StockItemID = ws.StockItemID
-		group by month(si.InvoiceDate), year(si.InvoiceDate), sl.UnitPrice, sl.Quantity
-		having (sl.UnitPrice * sl.Quantity) > 10000
-		order by month(si.InvoiceDate), year(si.InvoiceDate)
+	join Sales.InvoiceLines as sl on si.InvoiceID = sl.InvoiceID
+	join Warehouse.StockItems as ws on sl.StockItemID = ws.StockItemID
+group by month(si.InvoiceDate), year(si.InvoiceDate), sl.UnitPrice, sl.Quantity
+having (sl.UnitPrice * sl.Quantity) > 10000
+order by month(si.InvoiceDate), year(si.InvoiceDate)
 
 /*
 9. Вывести сумму продаж, дату первой продажи
@@ -210,21 +194,19 @@ from Sales.Invoices as si
 */
 
 select 
-	month(si.InvoiceDate) as month
-	,year(si.InvoiceDate) as year
+	month(si.InvoiceDate) as [month]
+	,year(si.InvoiceDate) as [year]
 	,ws.StockItemName
 	,sl.Quantity as TotalQuantity
 	,sum(sl.UnitPrice * sl.Quantity) as Sum
 	,sl.UnitPrice
 	,min(InvoiceDate) as firstDate
 from Sales.Invoices as si
-	join Sales.InvoiceLines as sl
-		on si.InvoiceID = sl.InvoiceID
-	join Warehouse.StockItems as ws
-		on sl.StockItemID = ws.StockItemID
-		group by month(si.InvoiceDate), year(si.InvoiceDate), sl.UnitPrice, sl.Quantity, ws.StockItemName
-		having sl.Quantity < 50
-		order by month(si.InvoiceDate), year(si.InvoiceDate)
+	join Sales.InvoiceLines as sl on si.InvoiceID = sl.InvoiceID
+	join Warehouse.StockItems as ws on sl.StockItemID = ws.StockItemID
+group by month(si.InvoiceDate), year(si.InvoiceDate), sl.UnitPrice, sl.Quantity, ws.StockItemName
+having sl.Quantity < 50
+order by month(si.InvoiceDate), year(si.InvoiceDate)
 
 -- ---------------------------------------------------------------------------
 -- Опционально
