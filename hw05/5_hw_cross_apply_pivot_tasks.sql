@@ -107,12 +107,19 @@ CountryId | CountryName | Code
 ----------+-------------+-------
 */
 
-select CountryID, CountryName, IsoAlpha3Code
-from Application.Countries
-union all
-select CountryID, CountryName, cast(IsoNumericCode as char)
-from Application.Countries
-order by CountryID
+select CountryID
+	,CountryName
+	,CodeType
+	,Code
+from
+    (
+     select ac.CountryID
+		,ac.CountryName
+		,cast(ac.IsoAlpha3Code as nvarchar) IsoAlpha3Code
+		,cast(ac.IsoNumericCode as nvarchar) IsoNumericCode
+     from Application.Countries ac
+	 ) as s
+unpivot(Code for CodeType in(IsoAlpha3Code, IsoNumericCode)) as unpvt;
 
 /*
 4. Выберите по каждому клиенту два самых дорогих товара, которые он покупал.
@@ -122,7 +129,7 @@ order by CountryID
 select sc.CustomerID, sc.CustomerName, o.*
 from Sales.Customers as sc
 cross apply (
-				select top 2 si.StockItemID, si.Description, si.UnitPrice
+				select top 2 si.StockItemID, si.UnitPrice, so.OrderDate, si.Description
                 from Sales.Orders as so
 					join Sales.OrderLines as si on so.OrderID = si.OrderID
                 where so.CustomerID = sc.CustomerID
