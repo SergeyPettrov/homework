@@ -47,22 +47,22 @@ declare @ColumnName as nvarchar(max)
 drop table if exists #person
 
 select format(si.InvoiceDate, 'dd.MM.yyyy') as InvoiceMonth
-	,substring(sc.CustomerName, CHARINDEX('(',sc.CustomerName) + 1 , LEN(sc.CustomerName) - CHARINDEX('(',sc.CustomerName) - 1 ) as [Client]
+	,substring(sc.CustomerName, charindex('(',sc.CustomerName) + 1 , len(sc.CustomerName) - charindex('(',sc.CustomerName) - 1 ) as Client
 into #person
 from Sales.Customers as sc
-left join [Sales].[Invoices] as si on si.CustomerID = sc.CustomerID 
+left join Sales.Invoices as si on si.CustomerID = sc.CustomerID 
 	where si.InvoiceDate is not null
 
-select @ColumnName= isnull(@ColumnName + ',','') + quotename([Client])
-from (select distinct [Client] from #person) as Months
-order by [Client]
+select @ColumnName= isnull(@ColumnName + ',','') + quotename(Client)
+from (select distinct Client from #person) as Months
+order by Client
 
 set @dml = 
   N'  
 	;with
 	pvtTab as (
 		select InvoiceMonth, ' + @ColumnName + ' FROM #person
-		pivot(count([Client]) for Client in (' + @ColumnName + ')
+		pivot(count(Client) for Client in (' + @ColumnName + ')
 		) as pvt
 	)
 	select *

@@ -53,8 +53,8 @@ select si.InvoiceID
 			and i.InvoiceDate between '2015-01-01' and '2015-12-31'
 		) as TotalSum
 from Sales.Invoices as si
-    join Sales.Customers sc on si.CustomerID = sc.CustomerID
-    join Sales.InvoiceLines il on si.InvoiceID = il.InvoiceID
+    join Sales.Customers as sc on si.CustomerID = sc.CustomerID
+    join Sales.InvoiceLines as il on si.InvoiceID = il.InvoiceID
 where si.InvoiceDate between '2015-01-01' and '2015-12-31'
 order by si.InvoiceDate, si.CUstomerID
 
@@ -71,9 +71,9 @@ select si.InvoiceID
 	,si.InvoiceDate
 	,sum(sil.Quantity * sil.UnitPrice) over (partition by si.InvoiceID) as OrderSum
 	,sum(sil.Quantity * sil.UnitPrice) over (order by datepart(year, si.InvoiceDate), datepart(month, si.InvoiceDate)) as TotalSum
-from Sales.Invoices si
-	join Sales.Customers sc on sc.CustomerID = si.CustomerID
-	join Sales.InvoiceLines sil on sil.InvoiceID = si.InvoiceID
+from Sales.Invoices as si
+	join Sales.Customers as sc on sc.CustomerID = si.CustomerID
+	join Sales.InvoiceLines as sil on sil.InvoiceID = si.InvoiceID
 where si.InvoiceDate between '2015-01-01' and '2015-12-31'
 order by si.InvoiceDate, si.CustomerID
 
@@ -102,7 +102,7 @@ as (
     from cteMonthSales as cms
 )
 select csn.StockItemName, csn.TotalQuantity
-from cteSalesNumbered csn
+from cteSalesNumbered as csn
 where csn.num <= 2
 order by csn.MonthNumber, csn.TotalQuantity desc
 
@@ -152,10 +152,10 @@ from
            ,sct.TransactionAmount
            ,row_number() over(partition by SalespersonPersonID order by TransactionDate desc) as num
     from Sales.CustomerTransactions as sct
-         join Sales.Invoices si on sct.InvoiceID = si.InvoiceID
+         join Sales.Invoices as si on sct.InvoiceID = si.InvoiceID
 ) as s
-	join Application.People ap on s.SalespersonPersonID = ap.PersonID
-	join Sales.Customers sc on s.CustomerID = sc.CustomerID
+	join Application.People as ap on s.SalespersonPersonID = ap.PersonID
+	join Sales.Customers as sc on s.CustomerID = sc.CustomerID
 where s.num = 1
 
 /*
@@ -171,17 +171,17 @@ select sc.CustomerID
 	,s.InvoiceDate
 from
 (
-    select i.CustomerID
+    select si.CustomerID
 		,sil.StockItemID
 		,ws.StockItemName
 		,ws.UnitPrice
-		,i.InvoiceDate
-		,row_number() over(partition by i.CustomerID order by ws.UnitPrice desc) as num
-    from Sales.InvoiceLines sil
-         join Sales.Invoices i on sil.InvoiceID = i.InvoiceID
-         join Warehouse.StockItems ws on sil.StockItemID = ws.StockItemID
+		,si.InvoiceDate
+		,row_number() over(partition by si.CustomerID order by ws.UnitPrice desc) as num
+    from Sales.InvoiceLines as sil
+         join Sales.Invoices as si on sil.InvoiceID = si.InvoiceID
+         join Warehouse.StockItems as ws on sil.StockItemID = ws.StockItemID
 ) as s
-	join Sales.Customers sc on s.CustomerID = sc.CustomerID
+	join Sales.Customers as sc on s.CustomerID = sc.CustomerID
 where s.Num <= 2
 
 --Опционально можете для каждого запроса без оконных функций сделать вариант запросов с оконными функциями и сравнить их производительность.

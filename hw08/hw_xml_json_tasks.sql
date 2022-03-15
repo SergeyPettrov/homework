@@ -55,7 +55,7 @@ select @docHandle as docHandle
 drop table if exists #StockItems
 
 create table #StockItems(
-	StockItemName nvarchar (100)
+	StockItemName nvarchar(100)
 	,SupplierID int
 	,UnitPackageID int
 	,OuterPackageID int
@@ -71,7 +71,7 @@ insert into #StockItems
 select *
 from openxml(@docHandle, N'/StockItems/Item')
 with ( 
-	StockItemName nvarchar (100) '@Name'
+	StockItemName nvarchar(100) '@Name'
 	,SupplierID int 'SupplierID'
 	,UnitPackageID int 'Package/UnitPackageID'
 	,OuterPackageID int 'Package/OuterPackageID'
