@@ -78,25 +78,25 @@ when matched then
 5. Напишите запрос, который выгрузит данные через bcp out и загрузить через bulk insert
 */
 
+-- bcp out ----------------------------------
 exec sp_configure 'xp_cmdshell', 1
 reconfigure
 
 exec master..xp_cmdshell 'bcp "select CustomerID, CustomerName FROM WideWorldImporters.Sales.Customers" queryout D:\HW\homework\hw10\Out.txt -T -w -t"@eu&$1&"'
 
-
+-- bulk insert -----------------------------
 create table Sales.Import(
 	CustomerID int,
 	CustomerName varchar(50)
-	);
+);
 
 bulk insert Sales.Import
 from "D:\HW\homework\hw10\Out.txt"
-with
-	(
+with (
 	batchsize = 1000,
 	datafiletype = 'widechar',
 	fieldterminator = '@eu&$1&',
 	rowterminator ='\n',
 	keepnulls,
 	tablock
-	);
+);
